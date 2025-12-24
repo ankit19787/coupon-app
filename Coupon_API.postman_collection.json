@@ -1,0 +1,478 @@
+{
+	"info": {
+		"_postman_id": "coupon-api-collection",
+		"name": "Coupon Management API",
+		"description": "Complete API collection for Coupon Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3001",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data.token) {",
+									"        pm.collectionVariables.set('auth_token', jsonData.data.token);",
+									"        console.log('Token saved:', jsonData.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get authentication token"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupons",
+			"item": [
+				{
+					"name": "Get All Coupons",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons?page=1&limit=10&search=&isActive=&discountType=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by code or description",
+									"disabled": true
+								},
+								{
+									"key": "isActive",
+									"value": "",
+									"description": "Filter by active status (true/false)",
+									"disabled": true
+								},
+								{
+									"key": "discountType",
+									"value": "",
+									"description": "Filter by type (percentage/fixed)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all coupons with pagination and filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coupon by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "coupon-uuid-here",
+									"description": "Coupon UUID"
+								}
+							]
+						},
+						"description": "Get a single coupon by its ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coupon by Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons/code/:code",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								"code",
+								":code"
+							],
+							"variable": [
+								{
+									"key": "code",
+									"value": "SAVE20",
+									"description": "Coupon code"
+								}
+							]
+						},
+						"description": "Get a coupon by its code"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Coupon",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE20\",\n    \"amount\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								"validate"
+							]
+						},
+						"description": "Validate a coupon code (public endpoint, no auth required)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SUMMER2024\",\n    \"description\": \"Summer sale 2024 - Get amazing discounts!\",\n    \"discount\": 25,\n    \"discountType\": \"percentage\",\n    \"minPurchaseAmount\": 100,\n    \"maxDiscountAmount\": 500,\n    \"startDate\": \"2024-06-01T00:00:00Z\",\n    \"endDate\": \"2024-08-31T23:59:59Z\",\n    \"usageLimit\": 1000,\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons"
+							]
+						},
+						"description": "Create a new coupon (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Coupon - Fixed Discount",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"FLAT50\",\n    \"description\": \"Flat $50 off on your purchase\",\n    \"discount\": 50,\n    \"discountType\": \"fixed\",\n    \"minPurchaseAmount\": 200,\n    \"startDate\": \"2024-01-01T00:00:00Z\",\n    \"endDate\": \"2024-12-31T23:59:59Z\",\n    \"usageLimit\": 500,\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons"
+							]
+						},
+						"description": "Create a coupon with fixed discount amount"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Coupon - Minimal Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"TEST20\",\n    \"discount\": 20,\n    \"discountType\": \"percentage\",\n    \"startDate\": \"2024-01-01T00:00:00Z\",\n    \"endDate\": \"2024-12-31T23:59:59Z\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons"
+							]
+						},
+						"description": "Create a coupon with only required fields (optional fields as null)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Coupon",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated description\",\n    \"isActive\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "coupon-uuid-here",
+									"description": "Coupon UUID"
+								}
+							]
+						},
+						"description": "Update an existing coupon (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Coupon",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "coupon-uuid-here",
+									"description": "Coupon UUID"
+								}
+							]
+						},
+						"description": "Delete a coupon (soft delete, Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Coupon Status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons/:id/toggle-status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								":id",
+								"toggle-status"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "coupon-uuid-here",
+									"description": "Coupon UUID"
+								}
+							]
+						},
+						"description": "Toggle coupon active/inactive status (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Coupon",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE20\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/coupons/apply",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								"apply"
+							]
+						},
+						"description": "Apply a coupon (increments usage count)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coupon Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/coupons/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"coupons",
+								"stats"
+							]
+						},
+						"description": "Get coupon statistics (Admin only)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if the server is running"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
+
