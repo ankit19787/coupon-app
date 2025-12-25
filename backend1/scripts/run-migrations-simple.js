@@ -1,4 +1,6 @@
-require('dotenv').config();
+// Load .env file - support custom .env file names
+const envFile = process.env.ENV_FILE || '.env';
+require('dotenv').config({ path: envFile });
 const sequelize = require('../config/database');
 const { Website } = require('../models');
 const { Coupon } = require('../models');
@@ -6,6 +8,7 @@ const { Coupon } = require('../models');
 async function runMigrations() {
   try {
     console.log('Connecting to database...');
+    console.log('DB_SSL setting:', process.env.DB_SSL || 'not set (defaults to false, SSL disabled)');
     await sequelize.authenticate();
     console.log('✅ Database connection established.');
 
@@ -13,6 +16,11 @@ async function runMigrations() {
     console.log('\nCreating/updating websites table...');
     await Website.sync({ alter: true, force: false });
     console.log('✅ Websites table ready.');
+
+    // Create/update coupons table first (if it doesn't exist)
+    console.log('\nCreating/updating coupons table...');
+    await Coupon.sync({ alter: true, force: false });
+    console.log('✅ Coupons table ready.');
 
     // Check if websiteId column exists
     console.log('\nUpdating coupons table with websiteId...');

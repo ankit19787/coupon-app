@@ -4,37 +4,39 @@
  * Usage: node scripts/test-db-connection.js
  */
 
-require('dotenv').config();
+// Load .env file - support custom .env file names
+const envFile = process.env.ENV_FILE || '.env';
+require('dotenv').config({ path: envFile });
 const sequelize = require('../config/database');
 
 async function testConnection() {
   try {
     console.log('Testing database connection...');
     console.log('Configuration:');
-    console.log(`  Host: ${process.env.DB_HOST || 'localhost'}`);
-    console.log(`  Port: ${process.env.DB_PORT || 5432}`);
-    console.log(`  Database: ${process.env.DB_NAME || 'coupon_db'}`);
-    console.log(`  User: ${process.env.DB_USER || 'postgres'}`);
+    
+    if (process.env.POSTGRES_URL) {
+      // Mask password in URL for display
+      const maskedUrl = process.env.POSTGRES_URL.replace(/:\/\/[^:]+:[^@]+@/, '://****:****@');
+      console.log(`  Connection String: ${maskedUrl}`);
+    } else {
+      console.log(`  Host: ${process.env.DB_HOST || 'localhost'}`);
+      console.log(`  Port: ${process.env.DB_PORT || 5432}`);
+      console.log(`  Database: ${process.env.DB_NAME || 'coupon_db'}`);
+      console.log(`  User: ${process.env.DB_USER || 'postgres'}`);
+    }
     console.log(`  Dialect: PostgreSQL`);
     console.log('');
 
     await sequelize.authenticate();
     console.log('✅ Database connection successful!');
     
-    // Test query
-    const [results] = await sequelize.query('SELECT DATABASE() as current_db');
+    // Test query - PostgreSQL uses current_database()
+    const [results] = await sequelize.query('SELECT current_database() as current_db');
     console.log(`✅ Current database: ${results[0].current_db}`);
     
-    // Check if coupon_db exists
-    const [databases] = await sequelize.query('SHOW DATABASES');
-    const dbExists = databases.some(db => db.Database === process.env.DB_NAME);
-    
-    if (dbExists) {
-      console.log(`✅ Database '${process.env.DB_NAME}' exists`);
-    } else {
-      console.log(`⚠️  Database '${process.env.DB_NAME}' does not exist`);
-      console.log('   Create it with: CREATE DATABASE coupon_db;');
-    }
+    // Get PostgreSQL version
+    const [dbInfo] = await sequelize.query('SELECT version() as version');
+    console.log(`✅ PostgreSQL version: ${dbInfo[0].version.split(',')[0]}`);
     
     process.exit(0);
   } catch (error) {
@@ -50,16 +52,20 @@ async function testConnection() {
     
     console.error('');
     console.error('Troubleshooting:');
-    console.error('1. Check if PostgreSQL is running (service or process)');
-    console.error('2. Verify database credentials in .env file');
-    console.error('3. Ensure database exists: CREATE DATABASE coupon_db;');
-    console.error('4. Check if port is correct (default: 5432)');
-    console.error('5. Verify PostgreSQL service is started');
-    console.error('6. See POSTGRESQL_SETUP.md for detailed setup guide');
+    if (process.env.POSTGRES_URL) {
+      console.error('1. Verify POSTGRES_URL format: postgresql://user:password@host:port/database');
+      console.error('2. Check if POSTGRES_URL contains correct credentials');
+    } else {
+      console.error('1. Verify database credentials in .env file');
+      console.error('2. Check individual DB_* variables (DB_HOST, DB_PORT, etc.)');
+    }
+    console.error('3. Check if PostgreSQL is running');
+    console.error('4. Ensure database exists');
+    console.error('5. Check if port is correct (default: 5432)');
+    console.error('6. Verify network/firewall settings');
     
     process.exit(1);
   }
 }
 
 testConnection();
-

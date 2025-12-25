@@ -41,10 +41,16 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Default error
+  // Always include error details in serverless for debugging
+  const isProduction = process.env.NODE_ENV === 'production' && !process.env.VERCEL;
+  
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(isProduction ? {} : { 
+      stack: err.stack,
+      ...(err.original && { original: err.original.message })
+    })
   });
 };
 

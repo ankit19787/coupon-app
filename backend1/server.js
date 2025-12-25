@@ -1,4 +1,6 @@
-require('dotenv').config();
+// Load .env file - support custom .env file names like .env.12, .env.13, etc.
+const envFile = process.env.ENV_FILE || '.env';
+require('dotenv').config({ path: envFile });
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');
@@ -11,20 +13,65 @@ const authRoutes = require('./routes/authRoutes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Middleware - CORS configuration
+// Allow multiple origins for development and production
+const getAllowedOrigins = () => {
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'https://coupons-ochre.vercel.app'
+  ];
+  
+  if (process.env.FRONTEND_URL) {
+    // Support comma-separated list of origins
+    const envOrigins = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+    return [...new Set([...envOrigins, ...defaultOrigins])]; // Merge and remove duplicates
+  }
+  
+  return defaultOrigins;
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}, Allowed: ${allowedOrigins.join(', ')}`));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
+// Health check (doesn't require database)
 app.get('/health', (req, res) => {
   res.json({
     success: true,
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    vercel: !!process.env.VERCEL
+  });
+});
+
+// Debug endpoint to check environment variables (safe - no sensitive data)
+app.get('/debug/env', (req, res) => {
+  res.json({
+    success: true,
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: !!process.env.VERCEL,
+      POSTGRES_URL: process.env.POSTGRES_URL ? 'SET' : 'NOT SET',
+      DB_HOST: process.env.DB_HOST || 'NOT SET',
+      DB_NAME: process.env.DB_NAME || 'NOT SET',
+      JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+      DB_SSL: process.env.DB_SSL || 'NOT SET'
+    }
   });
 });
 
@@ -45,26 +92,45 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Database connection and server start
-sequelize.authenticate()
-  .then(() => {
-    console.log('Database connection established successfully.');
-    
-    // Sync database (creates tables if they don't exist)
-    return sequelize.sync({ alter: false });
-  })
-  .then(() => {
-    console.log('Database synchronized successfully.');
-    
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Unable to connect to the database:', error);
-    process.exit(1);
+// Database connection - handle differently for serverless vs traditional server
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+if (isServerless) {
+  // Serverless: don't block on database connection during initialization
+  // Connection will be established on first request
+  // This prevents cold start failures
+  setImmediate(() => {
+    sequelize.authenticate()
+      .then(() => {
+        console.log('Database connection established successfully (serverless).');
+      })
+      .catch((error) => {
+        console.error('Database connection warning (serverless, non-blocking):', error.message);
+        // Don't throw - connection will be retried on first request
+      });
   });
+} else {
+  // Traditional server: authenticate, sync, and listen
+  sequelize.authenticate()
+    .then(() => {
+      console.log('Database connection established successfully.');
+      
+      // Sync database (creates tables if they don't exist)
+      return sequelize.sync({ alter: false });
+    })
+    .then(() => {
+      console.log('Database synchronized successfully.');
+      
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      });
+    })
+    .catch((error) => {
+      console.error('Unable to connect to the database:', error);
+      process.exit(1);
+    });
+}
 
 module.exports = app;
 

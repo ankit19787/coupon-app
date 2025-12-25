@@ -17,7 +17,7 @@ A RESTful API backend for managing coupons built with Node.js, Express, and Sequ
 ## Prerequisites
 
 - Node.js (v14 or higher)
-- MySQL (v5.7 or higher)
+- PostgreSQL (v10 or higher)
 - npm or yarn
 
 ## Installation
@@ -38,18 +38,32 @@ cp .env.example .env
 ```
 
 4. Update the `.env` file with your database credentials:
+**Option 1: Using POSTGRES_URL (Recommended)**
 ```env
 PORT=3001
 NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=coupon_db
-DB_USER=root
-DB_PASSWORD=your_password
+POSTGRES_URL=postgresql://username:password@host:port/database
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRES_IN=7d
 FRONTEND_URL=http://localhost:3000
 ```
+
+**Option 2: Using individual variables (fallback)**
+```env
+PORT=3001
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=coupon_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_SSL=false
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
+FRONTEND_URL=http://localhost:3000
+```
+
+**Note:** If `POSTGRES_URL` is set, it will be used. Otherwise, the individual variables will be used.
 
 5. Create the database:
 ```sql
