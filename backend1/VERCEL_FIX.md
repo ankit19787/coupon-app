@@ -72,7 +72,6 @@ After setting Root Directory and redeploying:
 - [ ] No "Please install pg package manually" error
 - [ ] Function logs show database connection attempts (even if they fail)
 - [ ] `/health` endpoint returns 200
-- [ ] `/debug/env` endpoint shows environment variables
 
 ## Still Getting the Error?
 

@@ -59,20 +59,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Debug endpoint to check environment variables (safe - no sensitive data)
-app.get('/debug/env', (req, res) => {
-  res.json({
-    success: true,
-    env: {
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL: !!process.env.VERCEL,
-      POSTGRES_URL: process.env.POSTGRES_URL ? 'SET' : 'NOT SET',
-      DB_HOST: process.env.DB_HOST || 'NOT SET',
-      DB_NAME: process.env.DB_NAME || 'NOT SET',
-      JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-      DB_SSL: process.env.DB_SSL || 'NOT SET'
-    }
-  });
 });
 
 // API Routes
